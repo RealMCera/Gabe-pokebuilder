@@ -1,85 +1,77 @@
-# Gabe's Pokémon Creator v7 — Smart Randomizer + Custom DNS GTS
+# Gabe's Pokemon Creator v8 — Hosted GTS Edition
 
-V7 adds a Smart Randomizer to the existing Gen IV/V builder and custom-DNS GTS workflow.
+V8 removes the requirement to install the GTS bridge on your own Windows PC. The web creator remains on Netlify, PKHeX/legalization remains on Render, and the new `hosted-gts/` container is designed for a small Linux VPS with a dedicated public IPv4.
 
-## Smart Randomizer
+## Repo layout
+- `frontend/` — Netlify website
+- `backend/` — Render .NET/PKHeX API
+- `hosted-gts/` — always-on DNS + Gen IV/V GTS bridge
+- `tools/` — legacy local bridge tools (optional; no longer required for the hosted route)
 
-Choose a Pokémon and game, pick a style, then click **Smart Randomize**. The browser reads the selected Pokémon's stats, types, abilities and game-specific DS-era movepool from PokéAPI, scores compatible moves, and fills nature, EVs, IVs, ability, held item, shiny chance, friendship and moves.
+## Render
+Keep Root Directory = `backend`, Dockerfile Path = `GabesPokemonCreator.Api/Dockerfile`, Build Context = `GabesPokemonCreator.Api`. Add `GTS_BRIDGE_TOKEN` with a long random secret.
 
-Modes: Smart balanced, Competitive-ish, In-game trainer, Wild-ish, and Legal-ish chaos.
+## Netlify
+Keep `BACKEND_URL=https://gabe-pokebuilder.onrender.com` (or your own Render URL).
 
-The randomizer intentionally does **not** claim the result is legal by itself. Use **Auto Legalize + Download** or **Queue for GTS** afterward so PKHeX.Core can reconcile encounter/PID/met-data restrictions.
+## Hosted GTS
+Read `hosted-gts/README.md`. Deploy that container to a Linux VPS with a dedicated public IPv4 and inbound UDP 53 + TCP 80. Point the DS Primary DNS at that IPv4.
 
-# Gabe's Pokemon Creator v6 — Custom DNS GTS Edition
+## Health check
+`/api/health` should report `creator: v8`.
 
-v6 keeps the Netlify + Render web creator from v5 and upgrades the Windows delivery side into a guided **local custom-DNS GTS bridge** for Gen IV/V.
 
-## Hosted pieces
+This ZIP is deliberately packaged with **no extra outer folder**. When you open it, you should immediately see:
 
-- **Netlify:** static web creator.
-- **Render:** PKHeX.Core API, auto-legality, and 30-minute GTS queue.
-- Render API currently configured in the Windows bridge: `https://gabe-pokebuilder.onrender.com`.
+- `backend/`
+- `frontend/`
+- `tools/`
+- `netlify.toml`
+- `render.yaml`
+- `package.json`
+- `scripts/`
 
-The existing Netlify environment variable remains:
+## Important GitHub upload rule
 
-`BACKEND_URL=https://gabe-pokebuilder.onrender.com`
+Upload the **contents of this ZIP directly to the root of your GitHub repository**. Do not upload the ZIP as one nested folder.
 
-## Deploy v6
+After uploading, this GitHub path must exist exactly:
 
-Replace/update the files in the GitHub repository, commit to `main`, then let Render and Netlify redeploy. The API health endpoint should report `creator: v6`:
+`backend/GabesPokemonCreator.Api/Services/PokemonGenerationService.cs`
+
+There must be only one file defining `PokemonGenerationService`. This clean build contains exactly one.
+
+## Render settings
+
+If you are using the existing Render Web Service instead of the Blueprint file, use:
+
+- Root Directory: `backend`
+- Runtime: Docker
+- Dockerfile Path: `GabesPokemonCreator.Api/Dockerfile`
+- Docker Build Context Directory: `GabesPokemonCreator.Api`
+
+Then use **Manual Deploy → Clear build cache & deploy**.
+
+After deploy, check:
 
 `https://gabe-pokebuilder.onrender.com/api/health`
 
-## First-time Windows GTS setup
+It should report `creator: v7.2.3`.
 
-Open the `tools` folder and run:
+## Netlify
 
-`setup-gts-rs.bat`
+Keep this environment variable:
 
-The helper checks for Git and Rust/Cargo, optionally offers to install them with Windows `winget`, clones the current upstream `gts-rs` repository from Codeberg, builds its release executable, and copies `gts-rs.exe` into the tools folder.
+`BACKEND_URL=https://gabe-pokebuilder.onrender.com`
 
-The upstream transport is kept separate rather than bundled into this project.
+Then redeploy the site.
 
-## Sending a Pokemon through custom DNS
+## Included fixes
 
-1. Build a Pokemon on the website.
-2. Click **Queue for GTS**.
-3. Copy the delivery code.
-4. On Windows, run `tools/start-custom-dns-gts.bat` as Administrator.
-5. Enter the delivery code.
-6. The bridge fetches the queued `.pk4`/`.pk5`, detects the PC's LAN IPv4 address, configures Windows Firewall rules when possible, and launches `gts-rs`.
-7. On the DS connection, disable automatic DNS and enter the **Primary DNS** printed by the bridge.
-8. Enter the normal in-game GTS and leave the bridge running.
-9. Confirm receipt so the queue entry is marked delivered.
-
-## Why custom DNS?
-
-The DS still uses Wi-Fi, but DNS redirects the game's legacy GTS traffic to the local replacement GTS server on the Windows PC. `gts-rs` implements the actual Gen IV/V DNS/GTS transport; Gabe's Creator handles generation, legality, and queueing.
-
-## Network caveats
-
-The PC and DS must be able to reach each other. Retail DS-era games use Nintendo's old Wi-Fi stack, so a DS-compatible open/WEP network may be required depending on hardware/game. Modern WPA2/WPA3-only configurations are often incompatible with the original DS Wi-Fi implementation.
-
-If `gts-rs` reports an address already in use, close other DNS/web-server software using the required ports and retry.
-
-## Supported games
-
-- Diamond / Pearl / Platinum
-- HeartGold / SoulSilver
-- Black / White
-- Black 2 / White 2
-
-## Third-party component
-
-`gts-rs` is a separate GPL-3.0 project maintained at `https://codeberg.org/bolu/gts-rs`. This archive does not bundle its source or executable; the setup helper obtains/builds it directly from upstream.
-
-
-## v7.1 hotfix
-Fixed DS default-name legality by using PKHeX `ClearNickname()` so the generation/language-specific species name and nickname trash bytes are written correctly before legality checks and GTS queueing.
-
-
-## v7.2.2 natural training cleanup
-
-- Smart Randomizer NPC builds now receive modest, nonzero EV training instead of all-zero EVs.
-- Auto Legalize moves leveled Pokémon off the exact minimum EXP threshold for their current level when PKHeX confirms the adjusted EXP remains legal.
-- Special/fixed encounters automatically keep their original EXP if the naturalization would invalidate them.
+- one and only one `PokemonGenerationService.cs`
+- corrected EXP level/growth byte casts
+- DS nickname legality fix
+- naturalized EXP helper
+- smart randomizer
+- GTS queue
+- custom DNS Windows bridge tools

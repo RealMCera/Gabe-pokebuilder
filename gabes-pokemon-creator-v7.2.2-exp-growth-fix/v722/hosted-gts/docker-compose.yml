@@ -1,0 +1,14 @@
+services:
+  gts:
+    build: .
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      CREATOR_API_URL: https://gabe-pokebuilder.onrender.com
+      GTS_BRIDGE_TOKEN: CHANGE_ME_TO_A_LONG_RANDOM_SECRET
+      GTS_POLL_SECONDS: "4"
+      GTS_DELIVERY_WAIT_SECONDS: "25"
+    volumes:
+      - gts-data:/data
+volumes:
+  gts-data:
