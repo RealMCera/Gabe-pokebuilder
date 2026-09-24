@@ -22,8 +22,8 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 var app = builder.Build();
 app.UseCors();
 
-app.MapGet("/", () => Results.Ok(new { app = "Gabe's Pokémon Creator API", version = "v7.2", status = "online" }));
-app.MapGet("/api/health", () => new { ok = true, engine = "PKHeX.Core", version = "26.8.26", creator = "v7.2.1" });
+app.MapGet("/", () => Results.Ok(new { app = "Gabe's Pokémon Creator API", version = "v7.2.2", status = "online" }));
+app.MapGet("/api/health", () => new { ok = true, engine = "PKHeX.Core", version = "26.8.26", creator = "v7.2.2" });
 
 app.MapGet("/api/games", () => new[] {
     new { id="diamond", name="Pokémon Diamond", generation=4, format="pk4" },
