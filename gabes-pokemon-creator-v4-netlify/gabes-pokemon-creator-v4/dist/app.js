@@ -213,7 +213,16 @@ function setEvs(mode,stats,bias){
   const els=Object.fromEntries([...document.querySelectorAll('.ev')].map(x=>[x.dataset.stat,x]));
   Object.values(els).forEach(x=>x.value=0);
   if(mode==='wild'){Object.values(els).forEach(x=>x.value=randomInt(0,32));return}
-  if(mode==='npc'){Object.values(els).forEach(x=>x.value=0);return}
+  if(mode==='npc'){
+    // Give trainer-style builds a modest amount of believable training rather than
+    // six untouched zero EVs, which PKHeX correctly flags as suspicious after leveling.
+    const ordered=['HP','Attack','Defense','Sp. Atk','Sp. Def','Speed'];
+    const preferred=bias==='special'?['Sp. Atk','Speed','HP']:bias==='physical'?['Attack','Speed','HP']:['HP','Speed',stats.attack>=stats['special-attack']?'Attack':'Sp. Atk'];
+    const used=new Set();
+    for(const stat of preferred){if(!els[stat]||used.has(stat))continue;els[stat].value=randomInt(12,48);used.add(stat)}
+    const extra=pick(ordered.filter(x=>!used.has(x)));if(extra&&els[extra])els[extra].value=randomInt(4,24);
+    return
+  }
   const speed=stats.speed||0,hp=stats.hp||0,def=stats.defense||0,spd=stats['special-defense']||0;
   let main=bias==='special'?'Sp. Atk':'Attack';
   let second=speed>=80?'Speed':(hp>=Math.max(def,spd)?'HP':(def>=spd?'Defense':'Sp. Def'));

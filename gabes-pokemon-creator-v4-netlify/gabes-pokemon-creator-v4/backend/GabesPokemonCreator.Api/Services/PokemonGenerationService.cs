@@ -213,6 +213,7 @@ public sealed class PokemonGenerationService
 
             ApplyPokerus(pk, request.Pokerus);
             ApplyDate(pk, request.MetDate);
+            NaturalizeExperience(pk, adjustments);
             pk.RefreshChecksum();
             var final = new LegalityAnalysis(pk);
             if (!final.Valid)
@@ -311,6 +312,37 @@ public sealed class PokemonGenerationService
     private static void SetEVs(PKM pk, (int hp, int atk, int def, int spa, int spd, int spe) v)
     {
         pk.EV_HP=v.hp; pk.EV_ATK=v.atk; pk.EV_DEF=v.def; pk.EV_SPA=v.spa; pk.EV_SPD=v.spd; pk.EV_SPE=v.spe;
+    }
+
+
+    private static void NaturalizeExperience(PKM pk, List<string> adjustments)
+    {
+        // CurrentLevel's setter places EXP exactly at the threshold for that level.
+        // For a Pokémon that has gained levels since capture, that can look artificial.
+        // Move it partway toward the next level, but keep the change only if PKHeX
+        // still considers the encounter legal.
+        int level = pk.CurrentLevel;
+        if (level >= 100 || level <= pk.MetLevel)
+            return;
+
+        uint minimum = Experience.GetEXP(level, pk.PersonalInfo.EXPGrowth);
+        if (pk.EXP != minimum)
+            return;
+
+        uint next = Experience.GetEXP(level + 1, pk.PersonalInfo.EXPGrowth);
+        if (next <= minimum + 1)
+            return;
+
+        uint old = pk.EXP;
+        uint span = next - minimum;
+        uint progress = Math.Max(1u, span / 3u);
+        pk.EXP = minimum + progress;
+
+        if (IsLegal(pk))
+            return;
+
+        pk.EXP = old;
+        adjustments.Add("Experience was kept at the encounter-generated value to preserve legality.");
     }
 
     private static byte[] GetStoredBytes(PKM pk)
@@ -415,8 +447,11 @@ public sealed class PokemonGenerationService
 
     private static void SetSpeciesName(PKM pk, int species)
     {
-        pk.IsNicknamed = false;
-        pk.Nickname = GameInfo.Strings.specieslist[species];
+        // PKHeX needs the generation/language-specific default nickname bytes,
+        // not the modern UI species string. ClearNickname() writes the exact
+        // species name and trash bytes expected for this PKM format.
+        pk.Species = (ushort)species;
+        pk.ClearNickname();
     }
 
     private static Nature ParseNature(string value) => Enum.TryParse<Nature>(value, true, out var nature) ? nature : Nature.Hardy;

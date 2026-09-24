@@ -72,3 +72,14 @@ If `gts-rs` reports an address already in use, close other DNS/web-server softwa
 ## Third-party component
 
 `gts-rs` is a separate GPL-3.0 project maintained at `https://codeberg.org/bolu/gts-rs`. This archive does not bundle its source or executable; the setup helper obtains/builds it directly from upstream.
+
+
+## v7.1 hotfix
+Fixed DS default-name legality by using PKHeX `ClearNickname()` so the generation/language-specific species name and nickname trash bytes are written correctly before legality checks and GTS queueing.
+
+
+## v7.2 natural training cleanup
+
+- Smart Randomizer NPC builds now receive modest, nonzero EV training instead of all-zero EVs.
+- Auto Legalize moves leveled Pokémon off the exact minimum EXP threshold for their current level when PKHeX confirms the adjusted EXP remains legal.
+- Special/fixed encounters automatically keep their original EXP if the naturalization would invalidate them.
