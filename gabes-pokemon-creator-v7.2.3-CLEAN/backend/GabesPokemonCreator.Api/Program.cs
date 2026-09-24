@@ -22,8 +22,8 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 var app = builder.Build();
 app.UseCors();
 
-app.MapGet("/", () => Results.Ok(new { app = "Gabe's Pokémon Creator API", version = "v7.2.3", status = "online" }));
-app.MapGet("/api/health", () => new { ok = true, engine = "PKHeX.Core", version = "26.8.26", creator = "v7.2.3" });
+app.MapGet("/", () => Results.Ok(new { app = "Gabe's Pokémon Creator API", version = "v8", status = "online" }));
+app.MapGet("/api/health", () => new { ok = true, engine = "PKHeX.Core", version = "26.8.26", creator = "v8" });
 
 app.MapGet("/api/games", () => new[] {
     new { id="diamond", name="Pokémon Diamond", generation=4, format="pk4" },
@@ -117,6 +117,27 @@ app.MapGet("/api/gts/queue/{code}", (string code, GtsQueueService queue) =>
 {
     var item = queue.GetPayload(code);
     return item is null ? Results.NotFound(new { error = "Queue code not found or expired." }) : Results.Ok(item);
+});
+
+app.MapPost("/api/gts/bridge/next", (HttpRequest http, GtsQueueService queue) =>
+{
+    var expected = Environment.GetEnvironmentVariable("GTS_BRIDGE_TOKEN");
+    if (string.IsNullOrWhiteSpace(expected))
+        return Results.Problem("GTS_BRIDGE_TOKEN is not configured on the API.", statusCode: 503);
+    if (!http.Headers.TryGetValue("X-GTS-Bridge-Token", out var supplied) || supplied.Count != 1 || supplied[0] != expected)
+        return Results.Unauthorized();
+
+    var item = queue.ClaimNextWaiting();
+    return item is null ? Results.NoContent() : Results.Ok(item);
+});
+
+app.MapPost("/api/gts/bridge/{code}/release", (string code, HttpRequest http, GtsQueueService queue) =>
+{
+    var expected = Environment.GetEnvironmentVariable("GTS_BRIDGE_TOKEN");
+    if (string.IsNullOrWhiteSpace(expected) || !http.Headers.TryGetValue("X-GTS-Bridge-Token", out var supplied) || supplied.Count != 1 || supplied[0] != expected)
+        return Results.Unauthorized();
+    var item = queue.Release(code);
+    return item is null ? Results.NotFound() : Results.Ok(item);
 });
 
 app.MapGet("/api/gts/queue/{code}/status", (string code, GtsQueueService queue) =>

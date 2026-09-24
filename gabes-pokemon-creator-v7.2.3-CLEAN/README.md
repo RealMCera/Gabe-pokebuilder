@@ -1,4 +1,25 @@
-# Gabe's Pokémon Creator v7.2.3 — Clean Deploy Build
+# Gabe's Pokemon Creator v8 — Hosted GTS Edition
+
+V8 removes the requirement to install the GTS bridge on your own Windows PC. The web creator remains on Netlify, PKHeX/legalization remains on Render, and the new `hosted-gts/` container is designed for a small Linux VPS with a dedicated public IPv4.
+
+## Repo layout
+- `frontend/` — Netlify website
+- `backend/` — Render .NET/PKHeX API
+- `hosted-gts/` — always-on DNS + Gen IV/V GTS bridge
+- `tools/` — legacy local bridge tools (optional; no longer required for the hosted route)
+
+## Render
+Keep Root Directory = `backend`, Dockerfile Path = `GabesPokemonCreator.Api/Dockerfile`, Build Context = `GabesPokemonCreator.Api`. Add `GTS_BRIDGE_TOKEN` with a long random secret.
+
+## Netlify
+Keep `BACKEND_URL=https://gabe-pokebuilder.onrender.com` (or your own Render URL).
+
+## Hosted GTS
+Read `hosted-gts/README.md`. Deploy that container to a Linux VPS with a dedicated public IPv4 and inbound UDP 53 + TCP 80. Point the DS Primary DNS at that IPv4.
+
+## Health check
+`/api/health` should report `creator: v8`.
+
 
 This ZIP is deliberately packaged with **no extra outer folder**. When you open it, you should immediately see:
 

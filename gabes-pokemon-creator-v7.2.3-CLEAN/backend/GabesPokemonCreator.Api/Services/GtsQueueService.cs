@@ -39,6 +39,28 @@ public sealed class GtsQueueService
         return item is null ? null : Public(item);
     }
 
+    public GtsQueueItem? ClaimNextWaiting()
+    {
+        Prune();
+        var item = _items.Values
+            .Where(x => string.Equals(x.Status, "waiting", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(x => x.CreatedAt)
+            .FirstOrDefault();
+        if (item is null) return null;
+
+        var updated = item with { Status = "delivering" };
+        return _items.TryUpdate(item.Code, updated, item) ? updated : null;
+    }
+
+    public GtsQueuePublicStatus? Release(string code)
+    {
+        var key = Normalize(code);
+        if (!_items.TryGetValue(key, out var item)) return null;
+        var updated = item with { Status = "waiting" };
+        _items[key] = updated;
+        return Public(updated);
+    }
+
     public GtsQueuePublicStatus? MarkDelivered(string code)
     {
         var key = Normalize(code);
