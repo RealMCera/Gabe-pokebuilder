@@ -245,14 +245,14 @@ public sealed class PokemonGenerationService
 
     private static SaveFile CreateTrainerSave(PokemonRequest request, GameVersion version)
     {
-        var language = Enum.IsDefined(typeof(LanguageID), request.Language)
-            ? (LanguageID)request.Language
+        var languageValue = (byte)Math.Clamp(request.Language, byte.MinValue, byte.MaxValue);
+        var language = Enum.IsDefined(typeof(LanguageID), languageValue)
+            ? (LanguageID)languageValue
             : LanguageID.English;
         var sav = BlankSaveFile.Get(version, string.IsNullOrWhiteSpace(request.Ot) ? "Gabe" : request.Ot.Trim(), language);
         sav.TID16 = (ushort)Math.Clamp(request.Tid, 0, ushort.MaxValue);
         sav.SID16 = (ushort)Math.Clamp(request.Sid, 0, ushort.MaxValue);
         sav.Gender = (byte)Math.Clamp(request.OtGender, 0, 1);
-        sav.Language = (int)language;
         return sav;
     }
 
