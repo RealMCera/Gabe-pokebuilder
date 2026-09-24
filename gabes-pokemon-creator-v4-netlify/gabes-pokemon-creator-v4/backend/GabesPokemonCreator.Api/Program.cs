@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5088";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 builder.Services.AddSingleton<PokemonGenerationService>();
+builder.Services.AddSingleton<GtsQueueService>();
 
 var allowedOrigins = (Environment.GetEnvironmentVariable("ALLOWED_ORIGINS") ?? "")
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -21,8 +22,8 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 var app = builder.Build();
 app.UseCors();
 
-app.MapGet("/", () => Results.Ok(new { app = "Gabe's Pokémon Creator API", version = "v4-netlify", status = "online" }));
-app.MapGet("/api/health", () => new { ok = true, engine = "PKHeX.Core", version = "26.8.26", creator = "v4-netlify" });
+app.MapGet("/", () => Results.Ok(new { app = "Gabe's Pokémon Creator API", version = "v6", status = "online" }));
+app.MapGet("/api/health", () => new { ok = true, engine = "PKHeX.Core", version = "26.8.26", creator = "v6" });
 
 app.MapGet("/api/games", () => new[] {
     new { id="diamond", name="Pokémon Diamond", generation=4, format="pk4" },
@@ -98,6 +99,40 @@ app.MapPost("/api/pokemon/generate", (PokemonRequest request, PokemonGenerationS
     }
     catch (Exception ex) { return Results.Problem(ex.Message, statusCode:400); }
 });
+
+app.MapPost("/api/gts/queue", (PokemonRequest request, PokemonGenerationService generator, GtsQueueService queue) =>
+{
+    try
+    {
+        var legal = generator.AutoLegalize(request);
+        if (!legal.Success || !legal.Legal)
+            return Results.BadRequest(legal);
+        var item = queue.Enqueue(request, legal);
+        return Results.Ok(new { item.Code, item.Status, item.Game, item.Generation, item.Species, item.FileName, item.CreatedAt, item.ExpiresAt, legal.Adjustments, legal.Encounter });
+    }
+    catch (Exception ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+app.MapGet("/api/gts/queue/{code}", (string code, GtsQueueService queue) =>
+{
+    var item = queue.GetPayload(code);
+    return item is null ? Results.NotFound(new { error = "Queue code not found or expired." }) : Results.Ok(item);
+});
+
+app.MapGet("/api/gts/queue/{code}/status", (string code, GtsQueueService queue) =>
+{
+    var item = queue.GetStatus(code);
+    return item is null ? Results.NotFound(new { error = "Queue code not found or expired." }) : Results.Ok(item);
+});
+
+app.MapPost("/api/gts/queue/{code}/delivered", (string code, GtsQueueService queue) =>
+{
+    var item = queue.MarkDelivered(code);
+    return item is null ? Results.NotFound(new { error = "Queue code not found or expired." }) : Results.Ok(item);
+});
+
+app.MapDelete("/api/gts/queue/{code}", (string code, GtsQueueService queue) =>
+    queue.Cancel(code) ? Results.NoContent() : Results.NotFound());
 
 app.Run();
 

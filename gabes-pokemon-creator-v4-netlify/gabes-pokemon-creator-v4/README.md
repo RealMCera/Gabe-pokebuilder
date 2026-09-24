@@ -1,125 +1,62 @@
-# Gabe's Pokémon Creator v4 — Netlify Web Edition
+# Gabe's Pokemon Creator v6 — Custom DNS GTS Edition
 
-A personal-use web Pokémon creator focused on Nintendo DS games:
+v6 keeps the Netlify + Render web creator from v5 and upgrades the Windows delivery side into a guided **local custom-DNS GTS bridge** for Gen IV/V.
 
-- Diamond / Pearl / Platinum (`.pk4`)
-- HeartGold / SoulSilver (`.pk4`)
-- Black / White (`.pk5`)
-- Black 2 / White 2 (`.pk5`)
+## Hosted pieces
 
-The frontend is a static site intended for **Netlify**. The PKHeX.Core legality/generation API is an **ASP.NET Core** service intended for **Render** (or another Docker/.NET host).
+- **Netlify:** static web creator.
+- **Render:** PKHeX.Core API, auto-legality, and 30-minute GTS queue.
+- Render API currently configured in the Windows bridge: `https://gabe-pokebuilder.onrender.com`.
 
-## Architecture
+The existing Netlify environment variable remains:
 
-```text
-Browser
-  ↓
-Netlify static frontend
-  ↓ /api/* proxy
-ASP.NET Core API on Render
-  ↓
-PKHeX.Core
-```
+`BACKEND_URL=https://gabe-pokebuilder.onrender.com`
 
-The frontend always calls `/api`, so visitors see one website URL. During the Netlify build, `BACKEND_URL` is used to generate the proxy rule.
+## Deploy v6
 
-## 1. Put this project on GitHub
+Replace/update the files in the GitHub repository, commit to `main`, then let Render and Netlify redeploy. The API health endpoint should report `creator: v6`:
 
-Create a repository and upload the contents of this folder. Both Netlify and Render can deploy from the same repo.
+`https://gabe-pokebuilder.onrender.com/api/health`
 
-## 2. Deploy the backend on Render
+## First-time Windows GTS setup
 
-### Option A — Blueprint
+Open the `tools` folder and run:
 
-This repo includes `render.yaml`.
+`setup-gts-rs.bat`
 
-1. In Render choose **New → Blueprint**.
-2. Connect the GitHub repository.
-3. Render will create `gabes-pokemon-creator-api` using the included Dockerfile.
-4. After deployment, copy the public Render URL, for example:
+The helper checks for Git and Rust/Cargo, optionally offers to install them with Windows `winget`, clones the current upstream `gts-rs` repository from Codeberg, builds its release executable, and copies `gts-rs.exe` into the tools folder.
 
-```text
-https://gabes-pokemon-creator-api.onrender.com
-```
+The upstream transport is kept separate rather than bundled into this project.
 
-5. Test:
+## Sending a Pokemon through custom DNS
 
-```text
-https://YOUR-RENDER-URL/api/health
-```
+1. Build a Pokemon on the website.
+2. Click **Queue for GTS**.
+3. Copy the delivery code.
+4. On Windows, run `tools/start-custom-dns-gts.bat` as Administrator.
+5. Enter the delivery code.
+6. The bridge fetches the queued `.pk4`/`.pk5`, detects the PC's LAN IPv4 address, configures Windows Firewall rules when possible, and launches `gts-rs`.
+7. On the DS connection, disable automatic DNS and enter the **Primary DNS** printed by the bridge.
+8. Enter the normal in-game GTS and leave the bridge running.
+9. Confirm receipt so the queue entry is marked delivered.
 
-You should receive JSON with `"ok": true`.
+## Why custom DNS?
 
-### CORS
+The DS still uses Wi-Fi, but DNS redirects the game's legacy GTS traffic to the local replacement GTS server on the Windows PC. `gts-rs` implements the actual Gen IV/V DNS/GTS transport; Gabe's Creator handles generation, legality, and queueing.
 
-The API allows cross-origin requests by default for the easiest first deployment. Because the normal browser path goes through Netlify's same-origin `/api` proxy, you can later set an `ALLOWED_ORIGINS` environment variable on Render to a comma-separated list of sites if you also want to restrict direct browser access to the API.
+## Network caveats
 
-## 3. Deploy the frontend on Netlify
+The PC and DS must be able to reach each other. Retail DS-era games use Nintendo's old Wi-Fi stack, so a DS-compatible open/WEP network may be required depending on hardware/game. Modern WPA2/WPA3-only configurations are often incompatible with the original DS Wi-Fi implementation.
 
-1. In Netlify choose **Add new project → Import an existing project**.
-2. Connect the same GitHub repository.
-3. Netlify should read `netlify.toml` automatically.
-4. Add this environment variable in **Project configuration → Environment variables**:
+If `gts-rs` reports an address already in use, close other DNS/web-server software using the required ports and retry.
 
-```text
-BACKEND_URL=https://YOUR-RENDER-URL.onrender.com
-```
+## Supported games
 
-Do **not** add `/api` to the end.
+- Diamond / Pearl / Platinum
+- HeartGold / SoulSilver
+- Black / White
+- Black 2 / White 2
 
-5. Deploy.
+## Third-party component
 
-Netlify runs:
-
-```text
-npm run build
-```
-
-and publishes the generated `dist/` directory.
-
-The build creates a Netlify rewrite like:
-
-```text
-/api/*  https://YOUR-RENDER-URL.onrender.com/api/:splat  200
-```
-
-so the frontend can safely use relative `/api/...` paths.
-
-## 4. Use it
-
-Open the Netlify URL. The status badge should say **PKHeX backend online**. You can then preview encounters, validate, auto-legalize, and download `.pk4` / `.pk5` files from the browser.
-
-## Local development
-
-Start the API:
-
-```powershell
-cd backend/GabesPokemonCreator.Api
-dotnet restore
-dotnet run
-```
-
-For a quick local frontend test, either temporarily proxy `/api` with a dev server or change the first line of `frontend/app.js` to your local API URL. The production file intentionally uses:
-
-```js
-const API='/api';
-```
-
-## Deployment files added in v4
-
-```text
-netlify.toml
-package.json
-scripts/build-netlify.mjs
-render.yaml
-backend/GabesPokemonCreator.Api/Dockerfile
-backend/GabesPokemonCreator.Api/.dockerignore
-```
-
-## Notes
-
-- PKHeX.Core package: `26.8.26`.
-- The API binds to Render's `PORT` environment variable automatically.
-- Netlify serves only the static frontend. PKHeX stays in the .NET backend.
-- Generated files should still be reviewed with current PKHeX before editing valuable save data.
-- Pokémon names, artwork and trademarks belong to their respective owners. PKHeX.Core is distributed under its upstream license; review that license before public redistribution.
+`gts-rs` is a separate GPL-3.0 project maintained at `https://codeberg.org/bolu/gts-rs`. This archive does not bundle its source or executable; the setup helper obtains/builds it directly from upstream.

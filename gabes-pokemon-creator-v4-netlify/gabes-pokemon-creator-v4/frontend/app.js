@@ -48,6 +48,7 @@ function wireEvents(){
   $('generatePkm').onclick=generatePkm;
   $('findEncounters').onclick=findEncounters;
   $('autoLegalize').onclick=autoLegalize;
+  $('queueGts').onclick=queueForGts;
 }
 async function loadReferenceData(){
   try{
@@ -162,6 +163,26 @@ async function autoLegalize(){
     const adjustments=result.adjustments?.length?`\n\nAuto-adjustments:\n• ${result.adjustments.join('\n• ')}`:'\n\nNo requested fields needed fallback.';
     flash(`Legal ${m.species} generated.\nOrigin: ${enc}${adjustments}`,'good');
   }catch(e){badge.className='badge bad';badge.textContent='No legal match';flash(`Auto-legality could not complete this build:\n${e.message}`,'bad')}
+}
+
+async function queueForGts(){
+  const m=readModel(),checks=basicChecks(m),box=$('gtsBox'),badge=$('legalityBadge');
+  if(checks.errors.length){flash(`Fix these first:\n• ${checks.errors.join('\n• ')}`,'bad');return}
+  if(!backendOnline){flash('The PKHeX backend must be online before a GTS delivery can be queued.','bad');return}
+  box.className='gts-box show';
+  box.innerHTML='<div class="encounter-loading">Auto-legalizing and creating a 30-minute delivery slot…</div>';
+  try{
+    const r=await fetch(`${API}/gts/queue`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(m)});
+    const result=await r.json();
+    if(!r.ok)throw new Error(result.report||result.error||'Could not create the GTS delivery.');
+    badge.className='badge good';badge.textContent='PKHeX: Legal';
+    const expires=new Date(result.expiresAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+    box.innerHTML=`<div class="delivery-code"><span>Delivery code</span><strong>${result.code}</strong></div>
+      <div class="delivery-details"><b>${result.species}</b> • ${result.game} • ${result.fileName}<br>Waiting for bridge • Expires ${expires}</div>
+      <div class="delivery-help">On your Windows PC, run <b>tools/start-custom-dns-gts.bat</b> as Administrator, enter this code, then use the Primary DNS address the bridge displays on your DS.</div>`;
+    localStorage.setItem('gabeLastGtsCode',result.code);
+    flash(`${m.species} is queued for GTS delivery. Code: ${result.code}`,'good');
+  }catch(e){box.innerHTML='';box.classList.remove('show');flash(`GTS queue failed:\n${e.message}`,'bad')}
 }
 
 function loadPreset(){const raw=localStorage.getItem('gabePokemonPresetV3')||localStorage.getItem('gabePokemonPresetV2')||localStorage.getItem('gabePokemonPreset');if(!raw)return flash('No saved preset found.','bad');const m=JSON.parse(raw);$('game').value=m.game||'platinum';populateSpecies();populateMoves();$('species').value=String(m.speciesId||25);$('level').value=m.level||50;$('nature').value=m.nature||'Jolly';$('gender').value=String(m.gender??0);$('shiny').checked=!!m.shiny;$('hiddenAbility').checked=!!m.hiddenAbility;$('pokerus').value=String(m.pokerus??0);Object.entries(m.ivs||{}).forEach(([s,v])=>{const x=[...document.querySelectorAll('.iv')].find(e=>e.dataset.stat===s);if(x)x.value=v});Object.entries(m.evs||{}).forEach(([s,v])=>{const x=[...document.querySelectorAll('.ev')].find(e=>e.dataset.stat===s);if(x)x.value=v});(m.moves||[]).forEach((v,i)=>{if(i<4)$(`move${i+1}`).value=String(typeof v==='object'?v.id:0)});$('metLevel').value=m.metLevel??5;$('metLocation').value=m.metLocation??0;$('encounterType').value=m.encounterType||'Wild encounter';$('metDate').value=m.metDate||'';$('fateful').checked=!!m.fateful;$('ot').value=m.ot||'Gabe';$('tid').value=m.tid??12345;$('sid').value=m.sid??54321;$('language').value=String(m.language??2);$('otGender').value=String(m.otGender??0);$('friendship').value=m.friendship??70;refresh();flash('Preset loaded.','good')}

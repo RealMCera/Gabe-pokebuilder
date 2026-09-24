@@ -10,7 +10,7 @@
   <header class="topbar">
     <div>
       <div class="eyebrow">DS-ERA LOCAL POKÉMON BUILDER</div>
-      <h1>Gabe's Pokémon Creator <span>v3</span></h1>
+      <h1>Gabe's Pokémon Creator <span>v5</span></h1>
     </div>
     <div id="backendBadge" class="backend-pill offline">Backend offline</div>
     <div id="legalityBadge" class="badge warning">Needs review</div>
@@ -104,7 +104,7 @@
 
       <section class="auto-card">
         <div>
-          <div class="eyebrow">V3 AUTO-LEGALITY</div>
+          <div class="eyebrow">AUTO-LEGALITY</div>
           <h3>Let PKHeX choose the legal origin</h3>
           <p>Searches the selected DS game for a compatible encounter, then keeps your requested build wherever the final legality check allows it.</p>
         </div>
@@ -113,6 +113,19 @@
           <button id="autoLegalize" class="primary">Auto Legalize + Download</button>
         </div>
         <div id="encounterBox" class="encounter-box"></div>
+      </section>
+
+
+      <section class="gts-card">
+        <div>
+          <div class="eyebrow">V6 CUSTOM DNS GTS</div>
+          <h3>Queue this Pokémon for your DS</h3>
+          <p>Auto-legalizes the build, stores it for 30 minutes, and gives you a code for the Windows custom-DNS GTS bridge.</p>
+        </div>
+        <div class="gts-actions">
+          <button id="queueGts" class="primary">Queue for GTS</button>
+        </div>
+        <div id="gtsBox" class="gts-box"></div>
       </section>
 
       <div class="status-box" id="statusBox"></div>
