@@ -1,3 +1,15 @@
+# Gabe's Pokémon Creator v7 — Smart Randomizer + Custom DNS GTS
+
+V7 adds a Smart Randomizer to the existing Gen IV/V builder and custom-DNS GTS workflow.
+
+## Smart Randomizer
+
+Choose a Pokémon and game, pick a style, then click **Smart Randomize**. The browser reads the selected Pokémon's stats, types, abilities and game-specific DS-era movepool from PokéAPI, scores compatible moves, and fills nature, EVs, IVs, ability, held item, shiny chance, friendship and moves.
+
+Modes: Smart balanced, Competitive-ish, In-game trainer, Wild-ish, and Legal-ish chaos.
+
+The randomizer intentionally does **not** claim the result is legal by itself. Use **Auto Legalize + Download** or **Queue for GTS** afterward so PKHeX.Core can reconcile encounter/PID/met-data restrictions.
+
 # Gabe's Pokemon Creator v6 — Custom DNS GTS Edition
 
 v6 keeps the Netlify + Render web creator from v5 and upgrades the Windows delivery side into a guided **local custom-DNS GTS bridge** for Gen IV/V.
