@@ -121,7 +121,7 @@ public sealed class PokemonGenerationService
             // Evolve the encounter result to the requested species when the core encounter
             // generator says that encounter is a valid origin for the requested Pokémon.
             pk.Species = (ushort)request.SpeciesId;
-            pk.CurrentLevel = (byte)Math.Clamp(request.Level, Math.Max(1, enc.LevelMin), 100);
+            pk.CurrentLevel = (byte)Math.Clamp(request.Level, Math.Max(1, (int)enc.LevelMin), 100);
             SetSpeciesName(pk, request.SpeciesId);
             ApplyMoves(pk, request);
             pk.RefreshChecksum();
