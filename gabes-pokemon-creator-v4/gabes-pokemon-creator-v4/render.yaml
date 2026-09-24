@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: gabes-pokemon-creator-api
+    runtime: docker
+    dockerfilePath: ./backend/GabesPokemonCreator.Api/Dockerfile
+    dockerContext: ./backend/GabesPokemonCreator.Api
+    healthCheckPath: /api/health
+    autoDeploy: true
