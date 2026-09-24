@@ -325,11 +325,11 @@ public sealed class PokemonGenerationService
         if (level >= 100 || level <= pk.MetLevel)
             return;
 
-        uint minimum = Experience.GetEXP(level, pk.PersonalInfo.EXPGrowth);
+        uint minimum = Experience.GetEXP((byte)level, (byte)pk.PersonalInfo.EXPGrowth);
         if (pk.EXP != minimum)
             return;
 
-        uint next = Experience.GetEXP(level + 1, pk.PersonalInfo.EXPGrowth);
+        uint next = Experience.GetEXP((byte)(level + 1), (byte)pk.PersonalInfo.EXPGrowth);
         if (next <= minimum + 1)
             return;
 
