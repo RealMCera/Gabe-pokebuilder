@@ -1,0 +1,9 @@
+{
+  "name": "gabes-pokemon-creator-v4",
+  "private": true,
+  "version": "4.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-netlify.mjs"
+  }
+}
