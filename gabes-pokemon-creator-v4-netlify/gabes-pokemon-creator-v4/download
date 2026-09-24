@@ -1,5 +1,5 @@
-dist/
-node_modules/
-backend/**/bin/
-backend/**/obj/
+bin/
+obj/
+.git/
+.vscode/
 .DS_Store

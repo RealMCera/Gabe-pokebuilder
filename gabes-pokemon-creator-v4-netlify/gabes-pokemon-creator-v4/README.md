@@ -78,7 +78,7 @@ If `gts-rs` reports an address already in use, close other DNS/web-server softwa
 Fixed DS default-name legality by using PKHeX `ClearNickname()` so the generation/language-specific species name and nickname trash bytes are written correctly before legality checks and GTS queueing.
 
 
-## v7.2.2 natural training cleanup
+## v7.2 natural training cleanup
 
 - Smart Randomizer NPC builds now receive modest, nonzero EV training instead of all-zero EVs.
 - Auto Legalize moves leveled Pokémon off the exact minimum EXP threshold for their current level when PKHeX confirms the adjusted EXP remains legal.
